@@ -1,0 +1,14 @@
+
+Re: WiringPi library not found. GPIO support disabled
+Postby gizmocuz » Saturday 22 August 2015 11:48
+
+This is just a warning, and there is no need to change the cmake script
+
+did you try
+
+cd wiringPi
+make static
+sudo make install-static
+
+and then build ?
+Quality outlives Quantity!
