@@ -58,10 +58,9 @@ struct gpio_freq_data {
 void testData(struct gpio_freq_data * data)
 {
     int i;
-    for (i=0;i<10;i++){
+    for (i=0;i<10;i++)
         data->lastDelta[i] = i+1;
-    }
-	  data->pWrite =   10;
+	data->pWrite =   10;
     data->pRead  = 0 ;
 
 }
@@ -77,7 +76,7 @@ static int gpio_freq_open (struct inode * ind, struct file * filp)
 	struct gpio_freq_data * data;
 
 	gpio = iminor(ind);
-  printk(KERN_INFO "open inode %d:%d GPIO:%d\n", imajor(ind) , iminor(ind),gpio_freq_table[gpio] );
+  printk(KERN_INFO "open inode %d:%d GPIO:%d mode:%d\n", imajor(ind) , iminor(ind),gpio_freq_table[gpio] , filp->f_mode );
 	
 	data = kzalloc(sizeof(struct gpio_freq_data), GFP_KERNEL);
 	if (data == NULL)
@@ -111,7 +110,7 @@ static int gpio_freq_open (struct inode * ind, struct file * filp)
 	}
 
 	filp->private_data = data;
-    testData(data);
+	testData(data);
 	return 0;
 }
 
@@ -168,20 +167,23 @@ static int gpio_freq_read(struct file * filp, char * buffer, size_t length, loff
 	char tmp[256];
 	int _count=0;
 	int _error_count=0;
-  long pulse = 0 ;
+  U32B pulse = 0 ;
   
 	_count = 0;
 	tmp[0] = 0 ;
 	spin_lock_irqsave(& (data->spinlock), irqmsk);
 	if ( data->pRead != data->pWrite ) {
 		pulse = data->lastDelta[data->pRead];
-		_count = sprintf(tmp, "%ld", data->lastDelta[data->pRead]);
+//		_count = sprintf(tmp, "%ld", data->lastDelta[data->pRead]);
+    _count=4;
 		data->pRead = (data->pRead + 1) & (BUFFER_SZ-1);
-        _error_count = copy_to_user(buffer,tmp,_count+1);
+    _error_count = copy_to_user(buffer,&pulse,_count);
+//    printk(KERN_INFO "read %ld %d %d", pulse , _count , length );
+    
 	}
 	
 	spin_unlock_irqrestore(& (data->spinlock), irqmsk);
-    printk(KERN_INFO "read %s %d %d", tmp , _count , length );
+//  printk(KERN_INFO "read %s %d %d", tmp , _count , length );
 
     if ( _error_count != 0 ) {
     	printk(KERN_ERR "RFRPI - copy_to_user");
@@ -214,7 +216,7 @@ static irqreturn_t gpio_freq_handler(int irq, void * arg)
 	delta = timespec_sub(current_time, data->lastIrq_time);
 	ns = ((long long)delta.tv_sec * 1000000)+(delta.tv_nsec/1000); 
 
-  printk(KERN_INFO "pulse %ld\n", ns );
+//  printk(KERN_INFO "pulse %ld\n", ns );
 
     spin_lock(&(data->spinlock));
     data->lastDelta[data->pWrite] = ns;
