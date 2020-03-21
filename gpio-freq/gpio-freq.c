@@ -261,10 +261,10 @@ static ssize_t gpio_freq_write(struct file *file, const char __user *buf,  size_
     int * kbuf;
     unsigned long flags;
 
+		struct gpio_freq_data * data = file->private_data ;
+
 	  if (count>= 4*1024)
 			return -ENOMEM;
-
-		struct gpio_freq_data * data = file->private_data ;
 	
 	 	//alloc data buffer
 		kbuf = kzalloc(count, GFP_KERNEL);
