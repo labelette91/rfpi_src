@@ -21,7 +21,7 @@
 #include <linux/spinlock.h>
 #include <linux/version.h>
 
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 
 
 // ------------------ Default values ----------------------------------------
@@ -58,9 +58,10 @@ struct gpio_freq_data {
 void testData(struct gpio_freq_data * data)
 {
     int i;
-    for (i=0;i<10;i++)
+    for (i=0;i<10;i++){
         data->lastDelta[i] = i+1;
-	data->pWrite =   10;
+    }
+	  data->pWrite =   10;
     data->pRead  = 0 ;
 
 }

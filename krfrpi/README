@@ -15,3 +15,5 @@ You should after that have a /dev/rfrpi device
 
 (c) Disk19.com / 2015
 License : GPL
+
+ sudo chown pi /dev/rfrpi
