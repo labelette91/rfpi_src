@@ -14,10 +14,13 @@ int main(int argc, char *argv[])
 {
     FILE * fp;
     std::string Device ;
+    	int count = 4 ;
+    	#define MAXS 128
     	
-//    if (argc>=2)
-//    Device =  argv[1] ;
+    if (argc>=2)
+    count =  atoi(argv[1]) ;
 //    else
+if (count>=MAXS) count = MAXS;
 
     Device = DeviceR + "17" ;
     printf("opening %s  \n",Device.c_str());
@@ -30,10 +33,10 @@ int main(int argc, char *argv[])
 
 //    char buffer[2048];
 //    char * bstart = buffer;
-    int bufer[10] ;
-    for (int i=1;i<10;i++) bufer[i] = i*10 ;
+    int bufer[MAXS] ;
+    for (int i=0;i<count;i++) bufer[i] = (i+1)*100 ;
 
-    fwrite (bufer,4,4,fp);
+    fwrite (bufer,4,count,fp);
 
     return 0;
 

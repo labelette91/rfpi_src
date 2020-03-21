@@ -246,11 +246,11 @@ void transmit_code( int gpio , int * duree , size_t count )
 	int i = 0 ;
 	for ( i=0;i<count;){
 	    printk(KERN_INFO  "%d: send 1 %d\n" ,gpio, duree[i]);
-//	    gpio_set_value( gpio, 1 );
+	    gpio_set_value( gpio, 1 );
 	    udelay(duree[i]);
 			i++;
 	    printk(KERN_INFO  "%d: send 0 %d\n" ,gpio, duree[i]);
-//	    gpio_set_value( gpio, 0 );
+	    gpio_set_value( gpio, 0 );
 	    udelay(duree[i]);
 			i++;
 	}
@@ -258,21 +258,28 @@ void transmit_code( int gpio , int * duree , size_t count )
 
 static ssize_t gpio_freq_write(struct file *file, const char __user *buf,  size_t count, loff_t *pos)
 {
-    int tmp[128];
+    int * kbuf;
     unsigned long flags;
 
+	  if (count>= 4*1024)
+			return -ENOMEM;
 
-	struct gpio_freq_data * data = file->private_data ;
+		struct gpio_freq_data * data = file->private_data ;
+	
+	 	//alloc data buffer
+		kbuf = kzalloc(count, GFP_KERNEL);
+		if (data == NULL)
+			return -ENOMEM;
 
-    if (copy_from_user(tmp, buf, count)) {
-        return -EFAULT;
-    }
+
+    if (copy_from_user(kbuf, buf, count)) {   return -EFAULT;    }
 
     // ready for transmission
     local_irq_save(flags);
-    transmit_code(	data->gpio , tmp, count/4 );
+    transmit_code(	data->gpio , kbuf, count/4 );
     local_irq_restore(flags);
-    printk(KERN_INFO ": send %d \n" ,count );
+    printk(GPIO_FREQ_ENTRIES_NAME ": send %d bytes\n" ,data->gpio,count );
+    kfree(kbuf);
     return count;
 }
 
