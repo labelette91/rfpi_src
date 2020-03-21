@@ -14,13 +14,10 @@ int main(int argc, char *argv[])
 {
     FILE * fp;
     std::string Device ;
-    	int dur=0;
     	
 //    if (argc>=2)
 //    Device =  argv[1] ;
 //    else
-    if (argc>=2)
-    	dur  = atoi( argv[1]) ;
 
     Device = DeviceR + "17" ;
     printf("opening %s  \n",Device.c_str());
@@ -32,29 +29,12 @@ int main(int argc, char *argv[])
     }
 
 //    char buffer[2048];
-    long int pulse;
-    int mod=0;
 //    char * bstart = buffer;
-    while (1) {
-       int count = fread(&pulse,4,1,fp);
+    int bufer[10] ;
+    for (int i=1;i<10;i++) bufer[i] = i*10 ;
 
-       if ( count > 0 ) {
-         /*
-         printf("V : [");
-         for ( int k = 0 ; k < count ; k ++  ) printf("%d ",buffer[k]);
-         printf("\n");
-         */
-//        buffer[count]=0;
-//        printf("count %d \n",count);
-        if (pulse>dur){
-        	printf("%ld ",pulse);
-        	mod++;
-        	if ((mod%8)==0)printf("\n");
-        }
+    fwrite (bufer,4,4,fp);
 
-       }else
-       	usleep(10000l);
-    }
     return 0;
 
 }

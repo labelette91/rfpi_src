@@ -1,8 +1,11 @@
 CXXFLAGS += -O2 -Wall -g -pthread
 
-all: test
+all: test testrd
 
 test:  test.o
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $+ -o $@ 
+
+testrd:  testrd.o
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $+ -o $@ 
 
 clean:

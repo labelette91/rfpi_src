@@ -20,6 +20,7 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/version.h>
+#include <linux/delay.h>
 
 #include <linux/uaccess.h>
 
@@ -42,6 +43,7 @@
 #define U32B unsigned long
 
 struct gpio_freq_data {
+		int gpio;
     struct timespec lastIrq_time;
     U32B lastDelta[BUFFER_SZ];
     int  pRead;
@@ -58,9 +60,10 @@ struct gpio_freq_data {
 void testData(struct gpio_freq_data * data)
 {
     int i;
-    for (i=0;i<10;i++)
+    for (i=0;i<10;i++){
         data->lastDelta[i] = i+1;
-	data->pWrite =   10;
+    }
+		data->pWrite =   10;
     data->pRead  = 0 ;
 
 }
@@ -82,6 +85,7 @@ static int gpio_freq_open (struct inode * ind, struct file * filp)
 	if (data == NULL)
 		return -ENOMEM;
 	
+	data->gpio = gpio_freq_table[gpio] ;
 	spin_lock_init(& (data->spinlock));
 		
 	err = gpio_request(gpio_freq_table[gpio], THIS_MODULE->name);
@@ -91,23 +95,46 @@ static int gpio_freq_open (struct inode * ind, struct file * filp)
 		return err;
 	}
 
-	err = gpio_direction_input(gpio_freq_table[gpio]);
-	if (err != 0) {
-		printk(KERN_ERR "%s: unable to set GPIO %d as input\n", THIS_MODULE->name, gpio_freq_table[gpio]);
-		gpio_free(gpio_freq_table[gpio]);
-		kfree(data);
-		return err;
+//mode rd
+	if ( filp->f_mode==29)
+	{
+		err = gpio_direction_input(gpio_freq_table[gpio]);
+		if (err != 0) {
+			printk(KERN_ERR "%s: unable to set GPIO %d as input\n", THIS_MODULE->name, gpio_freq_table[gpio]);
+			gpio_free(gpio_freq_table[gpio]);
+			kfree(data);
+			return err;
+		}
+		
+		err = request_irq(gpio_to_irq(gpio_freq_table[gpio]), gpio_freq_handler,
+		                  IRQF_SHARED | IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING ,
+		                  THIS_MODULE->name, filp);
+		if (err != 0) {
+			printk(KERN_ERR "%s: unable to handle GPIO %d IRQ\n", THIS_MODULE->name, gpio_freq_table[gpio]);
+			gpio_free(gpio_freq_table[gpio]);
+			kfree(data);
+			return err;
+		}
 	}
-	
-	err = request_irq(gpio_to_irq(gpio_freq_table[gpio]), gpio_freq_handler,
-	                  IRQF_SHARED | IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING ,
-	                  THIS_MODULE->name, filp);
-	if (err != 0) {
-		printk(KERN_ERR "%s: unable to handle GPIO %d IRQ\n", THIS_MODULE->name, gpio_freq_table[gpio]);
-		gpio_free(gpio_freq_table[gpio]);
-		kfree(data);
-		return err;
+	else
+//mode wr		
+	if ( filp->f_mode==30)
+	{
+		err = gpio_direction_output(gpio_freq_table[gpio] , 0 );
+		if (err != 0) {
+			printk(KERN_ERR "%s: unable to set GPIO %d as output\n", THIS_MODULE->name, gpio_freq_table[gpio]);
+			gpio_free(gpio_freq_table[gpio]);
+			kfree(data);
+			return err;
+		}
 	}
+	else
+	{
+			kfree(data);
+			return -1 ;
+		}
+		
+		
 
 	filp->private_data = data;
 	testData(data);
@@ -121,8 +148,10 @@ static int gpio_freq_release (struct inode * ind,  struct file * filp)
 {
 	int gpio = iminor(ind);
 
+	if ( filp->f_mode==29)
+{
 	free_irq(gpio_to_irq(gpio_freq_table[gpio]), filp);
-
+}
 	gpio_free(gpio_freq_table[gpio]);
 
 	kfree(filp->private_data);
@@ -195,6 +224,58 @@ static int gpio_freq_read(struct file * filp, char * buffer, size_t length, loff
 }
 
 
+static unsigned await_timer = 0;
+static struct timeval initial;
+
+static inline unsigned micros(void)
+{
+    struct timeval t;
+    do_gettimeofday(&t);
+    t.tv_sec -= initial.tv_sec;
+    return ((unsigned) t.tv_sec * (unsigned) 1000000) + t.tv_usec;
+}
+
+static inline void await(unsigned us)
+{
+    await_timer += us;
+    while(micros() < await_timer) {}
+}
+
+void transmit_code( int gpio , int * duree , size_t count )
+{
+	int i = 0 ;
+	for ( i=0;i<count;){
+	    printk(KERN_INFO  "%d: send 1 %d\n" ,gpio, duree[i]);
+//	    gpio_set_value( gpio, 1 );
+	    udelay(duree[i]);
+			i++;
+	    printk(KERN_INFO  "%d: send 0 %d\n" ,gpio, duree[i]);
+//	    gpio_set_value( gpio, 0 );
+	    udelay(duree[i]);
+			i++;
+	}
+}
+
+static ssize_t gpio_freq_write(struct file *file, const char __user *buf,  size_t count, loff_t *pos)
+{
+    int tmp[128];
+    unsigned long flags;
+
+
+	struct gpio_freq_data * data = file->private_data ;
+
+    if (copy_from_user(tmp, buf, count)) {
+        return -EFAULT;
+    }
+
+    // ready for transmission
+    local_irq_save(flags);
+    transmit_code(	data->gpio , tmp, count/4 );
+    local_irq_restore(flags);
+    printk(KERN_INFO ": send %d \n" ,count );
+    return count;
+}
+
 
 
 static irqreturn_t gpio_freq_handler(int irq, void * arg)
@@ -248,6 +329,7 @@ static struct file_operations gpio_freq_fops = {
 	.open    =  gpio_freq_open,
 	.release =  gpio_freq_release,
 	.read    =  gpio_freq_read,
+	.write   = gpio_freq_write,
 };
 
 
