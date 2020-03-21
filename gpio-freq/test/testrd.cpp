@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     	dur  = atoi( argv[1]) ;
 
     Device = DeviceR + "17" ;
-    printf("opening %s  \n",Device.c_str());
+    printf("opening %s  dur:%d\n",Device.c_str(),dur);
     
     fp = fopen(Device.c_str(), "r");
     if ( fp == NULL ) {
@@ -32,31 +32,30 @@ int main(int argc, char *argv[])
     }
 
 //    char buffer[2048];
-    long int pulse;
-    int mod=0;
+#define MAXS 4096
+#define NBCT 500
+
+    int pulse[MAXS];
+    int ct=NBCT;
+    int nbP = 0 ;
 //    char * bstart = buffer;
-    while (1) {
-       int count = fread(&pulse,4,1,fp);
+    while (ct--) {
+       int count = fread(pulse,4,2048,fp);
 
+			nbP += count ;
+			
        if ( count > 0 ) {
-         /*
-         printf("V : [");
-         for ( int k = 0 ; k < count ; k ++  ) printf("%d ",buffer[k]);
-         printf("\n");
-         */
-//        buffer[count]=0;
-//        printf("count %d \n",count);
-        if (pulse>dur){
-        	printf("%ld ",pulse);
-        	mod++;
-        	if ((mod%8)==0)printf("\n");
-        	if ( mod >8) 
-        		break;
-        }
-
+         printf("\ncount %d :",count);
+         for ( int k = 0 ; k < count ; k ++  ) 
+         {
+        		if ((k%32)==0)printf("\n");
+         		printf("%d ",pulse[k]/10 );
+         	}
        }else
        	usleep(10000l);
     }
+ 		printf("\n Pulse:%d = %d per sec\n",nbP , nbP/ (NBCT/100));
+    fclose(fp);
     return 0;
 
 }

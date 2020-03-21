@@ -32,7 +32,7 @@
 
 #define GPIO_FOR_RX_SIGNAL	17
 #define DEV_NAME 			"rfrpi" 
-#define BUFFER_SZ			512 
+#define BUFFER_SZ			2048 
 
 /* Last Interrupt timestamp */
 static struct timespec lastIrq_time;
@@ -61,9 +61,11 @@ static irqreturn_t rx_isr(int irq, void *data)
 
    	getnstimeofday(&current_time);
 	delta = timespec_sub(current_time, lastIrq_time);
-	ns = ((long long)delta.tv_sec * 1000000)+(delta.tv_nsec/1000); 
+//	ns = ((long long)delta.tv_sec * 1000000)+(delta.tv_nsec/1000); 
+	ns = (delta.tv_nsec/1000); 
 	lastDelta[pWrite] = ns;
-   	getnstimeofday(&lastIrq_time);
+//  getnstimeofday(&lastIrq_time);
+	lastIrq_time = current_time ;
 
 	pWrite = ( pWrite + 1 )  & (BUFFER_SZ-1);
 	if (pWrite == pRead) {
@@ -76,6 +78,9 @@ static irqreturn_t rx_isr(int irq, void *data)
 	} else {
 		wasOverflow = 0;
 	}
+
+//	if (pWrite == 0 ) 	       printk( "RFRPI");
+
 	return IRQ_HANDLED;
 }
 

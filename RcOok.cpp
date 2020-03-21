@@ -180,7 +180,7 @@
             sprintf(d,"%c",v[ data[i] >> 4 ]);d++;
             sprintf(d,"%c",v[ data[i] & 0x0F]);d++;
         }
-        sprintf(d,'\0');
+        sprintf(d,"\0");
 
 #ifdef TRACE_RCOOK
         std::cout << " * DecodeOOK::sprint() - received [" << _d << "]" << std::endl;

@@ -300,11 +300,14 @@ void * RCSwitch::receiveLoop(void * _param) {
        count += reste;
 
        if ( count > 0 ) {
-         /*
+         
+/*
          printf("V : [");
          for ( int k = 0 ; k < count ; k ++  ) printf("%d ",buffer[k]);
          printf("\n");
-         */
+*/
+         printf("count:%d\n",count);
+        
          int start=0;
          int end = 0;
          while ( end < count ) {
