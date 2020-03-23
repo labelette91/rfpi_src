@@ -46,13 +46,15 @@ int main(int argc, char *argv[])
 			
        if ( count > 0 ) {
          printf("\ncount %d :",count);
+         /*
          for ( int k = 0 ; k < count ; k ++  ) 
          {
         		if ((k%32)==0)printf("\n");
          		printf("%d ",pulse[k]/10 );
          	}
-       }else
-       	usleep(10000l);
+         	*/
+       }
+       usleep(10000l);
     }
  		printf("\n Pulse:%d = %d per sec\n",nbP , nbP/ (NBCT/100));
     fclose(fp);

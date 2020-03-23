@@ -207,7 +207,6 @@ static int gpio_freq_read(struct file * filp, char * buffer, size_t length, loff
 	int _error_count=0;
   int nb ;
   
-	_count = 0;
 	spin_lock_irqsave(& (data->spinlock), irqmsk);
 	if ( data->pRead != data->pWrite ) 
 	{
@@ -232,9 +231,10 @@ static int gpio_freq_read(struct file * filp, char * buffer, size_t length, loff
 	}
 	
 	spin_unlock_irqrestore(& (data->spinlock), irqmsk);
+/*
   if (_count>0)
   	printk(  "read %d %d",  _count , length );
-
+*/
     if ( _error_count != 0 ) {
     	printk(KERN_ERR "RFRPI - copy_to_user");
         return -EFAULT;
@@ -313,6 +313,7 @@ static irqreturn_t gpio_freq_handler(int irq, void * arg)
    	struct timespec current_time;
     struct timespec delta;
    	unsigned long ns;
+	int pinData;
 	
 	if (filp == NULL)
 		return -IRQ_NONE;
@@ -328,9 +329,20 @@ static irqreturn_t gpio_freq_handler(int irq, void * arg)
 //  printk(KERN_INFO "pulse %ld\n", ns );
 
     spin_lock(&(data->spinlock));
+
+		pinData = gpio_get_value(data->gpio);
+		//calcul etat du pulse que l'on mesure
+		if (pinData == 1)
+			//tranistion 0--1 : etat pulse = 0 : bit 0 = 0
+			ns &=0xFFFE ;
+		else
+			//tranistion 1--0 : etat pulse = 1 : bit 0 = 1
+			ns |= 1 ;
+    
     data->lastDelta[data->pWrite] = ns;
    	getnstimeofday(&data->lastIrq_time);
 	data->pWrite = ( data->pWrite + 1 )  % (BUFFER_SZ);
+
 	if (data->pWrite == data->pRead) {
 		// overflow
 		data->pRead = ( data->pRead + 1 ) % (BUFFER_SZ);
