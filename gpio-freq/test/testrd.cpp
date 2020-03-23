@@ -8,6 +8,10 @@ C code : test.cpp
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/ioctl.h>.
+
+#define WR_VALUE _IOW('a','a',int32_t*)
+#define RD_VALUE _IOR('a','b',int32_t*)
 
  std::string DeviceR= "/dev/gpiofreq" ;
 int main(int argc, char *argv[])
@@ -38,11 +42,18 @@ int main(int argc, char *argv[])
     int pulse[MAXS];
     int ct=NBCT;
     int nbP = 0 ;
+    int32_t value ;
+
 //    char * bstart = buffer;
     while (ct--) {
-       int count = fread(pulse,4,2048,fp);
 
-			nbP += count ;
+    	ioctl(fp, RD_VALUE, (int32_t*) &value);
+
+       	printf("value %d :",  value  );
+
+       	int count = fread(pulse,4,2048,fp);
+
+	nbP += count ;
 			
        if ( count > 0 ) {
          printf("\ncount %d :",count);

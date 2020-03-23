@@ -24,6 +24,10 @@
 
 #include <linux/uaccess.h>
 
+#include <linux/ioctl.h>
+ 
+#define WR_VALUE _IOW('a','a',int32_t*)
+#define RD_VALUE _IOR('a','b',int32_t*)
 
 // ------------------ Default values ----------------------------------------
 
@@ -348,6 +352,36 @@ static irqreturn_t gpio_freq_handler(int irq, void * arg)
 
 }
 
+static long gpio_freq_ioctl(struct file* file, unsigned int cmd, unsigned long arg)
+{
+	int32_t value = 0;
+
+	if (file == 0)
+		return -1;
+	struct gpio_freq_data* data = file->private_data;
+
+	if (data->pRead != data->pWrite) {
+
+		/* copy data between read and write */
+		if (data->pRead < data->pWrite)
+			value = (data->pWrite - data->pRead);
+		else
+			/* copy data between read and end buffer */
+			value = (BUFFER_SZ - data->pRead);
+	}
+
+	switch (cmd) {
+	case WR_VALUE:
+		//		copy_from_user(&value, (int32_t*)arg, sizeof(value));
+		printk(KERN_INFO "Value = %d\n", value);
+		break;
+	case RD_VALUE:
+		copy_to_user((int32_t*)arg, &value, sizeof(value));
+		break;
+	}
+	return 0;
+}
+
 
 
 // ------------------ Driver private global data ----------------------------
@@ -358,6 +392,7 @@ static struct file_operations gpio_freq_fops = {
 	.release =  gpio_freq_release,
 	.read    =  gpio_freq_read,
 	.write   = gpio_freq_write,
+	.unlocked_ioctl = gpio_freq_ioctl,
 };
 
 
