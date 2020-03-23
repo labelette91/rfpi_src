@@ -367,10 +367,12 @@ static irqreturn_t gpio_freq_handler(int irq, void * arg)
 static long gpio_freq_ioctl(struct file* file, unsigned int cmd, unsigned long arg)
 {
 	int32_t value = 0;
+	int _error_count ;
+	struct gpio_freq_data* data ;
 
 	if (file == 0)
 		return -1;
-	struct gpio_freq_data* data = file->private_data;
+	 data = file->private_data;
 
 	if (data->pRead != data->pWrite) {
 
@@ -388,7 +390,13 @@ static long gpio_freq_ioctl(struct file* file, unsigned int cmd, unsigned long a
 		printk(KERN_INFO "Value = %d\n", value);
 		break;
 	case RD_VALUE:
-		copy_to_user((int32_t*)arg, &value, sizeof(value));
+		_error_count = copy_to_user((int32_t*)arg, &value, sizeof(value));
+		
+    if ( _error_count != 0 ) {
+    	printk(KERN_ERR "RFRPI - copy_to_user");
+        return -EFAULT;
+    }
+		
 		break;
 	}
 	return 0;

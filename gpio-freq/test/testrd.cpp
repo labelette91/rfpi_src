@@ -8,7 +8,7 @@ C code : test.cpp
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/ioctl.h>.
+#include <sys/ioctl.h>
 
 #define WR_VALUE _IOW('a','a',int32_t*)
 #define RD_VALUE _IOR('a','b',int32_t*)
@@ -47,9 +47,9 @@ int main(int argc, char *argv[])
 //    char * bstart = buffer;
     while (ct--) {
 
-    	ioctl(fp, RD_VALUE, (int32_t*) &value);
+    	ioctl(fileno(fp), RD_VALUE, (int32_t*) &value);
 
-       	printf("value %d :",  value  );
+       	printf("ioctl %d \n",  value  );
 
        	int count = fread(pulse,4,2048,fp);
 
