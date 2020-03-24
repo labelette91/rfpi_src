@@ -54,7 +54,7 @@ struct gpio_freq_data {
     int  pWrite;
     int  wasOverflow;
 
-	spinlock_t spinlock;
+//	spinlock_t spinlock;
     int frequency;
     struct timeval last_timestamp;
     U32B lastDelta[BUFFER_SZ];
@@ -95,7 +95,7 @@ static int gpio_freq_open (struct inode * ind, struct file * filp)
 	
 	data->gpio = gpio_freq_table[gpio] ;
 	data->f_mode = filp->f_mode ;
-	spin_lock_init(& (data->spinlock));
+//	spin_lock_init(& (data->spinlock));
 		
 	err = gpio_request(gpio_freq_table[gpio], THIS_MODULE->name);
 	if (err != 0) {
@@ -211,7 +211,7 @@ static int gpio_freq_read(struct file * filp, char * buffer, size_t length, loff
 	int _error_count=0;
   int nb ;
   
-	spin_lock_irqsave(& (data->spinlock), irqmsk);
+//	spin_lock_irqsave(& (data->spinlock), irqmsk);
 	if ( data->pRead != data->pWrite ) 
 	{
 
@@ -234,7 +234,7 @@ static int gpio_freq_read(struct file * filp, char * buffer, size_t length, loff
    
 	}
 	
-	spin_unlock_irqrestore(& (data->spinlock), irqmsk);
+//	spin_unlock_irqrestore(& (data->spinlock), irqmsk);
 /*
   if (_count>0)
   	printk(  "read %d %d",  _count , length );
@@ -328,11 +328,12 @@ static irqreturn_t gpio_freq_handler(int irq, void * arg)
 
    	getnstimeofday(&current_time);
 	delta = timespec_sub(current_time, data->lastIrq_time);
-	ns = ((long long)delta.tv_sec * 1000000)+(delta.tv_nsec/1000); 
+//	ns = ((long long)delta.tv_sec * 1000000)+(delta.tv_nsec/1000); 
+	ns = (delta.tv_nsec/1000); 
 
 //  printk(KERN_INFO "pulse %ld\n", ns );
 
-    spin_lock(&(data->spinlock));
+//    spin_lock(&(data->spinlock));
 
 		pinData = gpio_get_value(data->gpio);
 		//calcul etat du pulse que l'on mesure
@@ -344,7 +345,9 @@ static irqreturn_t gpio_freq_handler(int irq, void * arg)
 			ns |= 1 ;
     
     data->lastDelta[data->pWrite] = ns;
-   	getnstimeofday(&data->lastIrq_time);
+   	//getnstimeofday(&data->lastIrq_time);
+   	data->lastIrq_time = current_time;
+   	
 	data->pWrite = ( data->pWrite + 1 )  % (BUFFER_SZ);
 
 	if (data->pWrite == data->pRead) {
@@ -357,7 +360,7 @@ static irqreturn_t gpio_freq_handler(int irq, void * arg)
 	} else {
 		data->wasOverflow = 0;
 	}
-    spin_unlock(&(data->spinlock));
+//    spin_unlock(&(data->spinlock));
 
 	return IRQ_HANDLED;
 
