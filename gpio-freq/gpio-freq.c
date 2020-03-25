@@ -269,15 +269,12 @@ static inline void await(unsigned us)
 void transmit_code( int gpio , int * duree , size_t count )
 {
 	int i = 0 ;
-	for ( i=0;i<count;){
-	    printk(KERN_INFO  "%d: send 1 %d\n" ,gpio, duree[i]);
-	    gpio_set_value( gpio, 1 );
+	int pin = 0 ;
+	for ( i=0;i<count;i++){
+	    pin = duree[i] & 1 ;
+	    //printk(KERN_INFO  "%d: send %d %d\n" ,gpio, pin , duree[i]);
+	    gpio_set_value( gpio, pin );
 	    udelay(duree[i]);
-			i++;
-	    printk(KERN_INFO  "%d: send 0 %d\n" ,gpio, duree[i]);
-	    gpio_set_value( gpio, 0 );
-	    udelay(duree[i]);
-			i++;
 	}
 }
 
