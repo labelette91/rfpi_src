@@ -15,7 +15,7 @@
 case "$1" in
   start)
     echo "Starting script installPulseDriver "
-		sudo insmod /home/pi/rfrpi_src/gpio-freq/gpio-freq.ko gpios=16,22,23,17
+		sudo insmod /home/pi/rfrpi_src/gpio-freq/gpio-freq.ko gpios=16,22,23,17,24
 		sudo chown pi /dev/gpiofreq*
     
     ;;

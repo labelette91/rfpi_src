@@ -9,6 +9,7 @@
  the Free Software Foundation.
 
 \***************************************************************************/
+#include <linux/ktime.h>
 
 #include <linux/cdev.h>
 #include <linux/device.h>
@@ -49,14 +50,13 @@
 struct gpio_freq_data {
 		int gpio;
 		int f_mode;
-    struct timespec lastIrq_time;
+    ktime_t lastIrq_time;
     int  pRead;
     int  pWrite;
     int  wasOverflow;
 
-//	spinlock_t spinlock;
+	spinlock_t spinlock;
     int frequency;
-    struct timeval last_timestamp;
     U32B lastDelta[BUFFER_SZ];
     
     U32B res[16];
@@ -95,9 +95,10 @@ static int gpio_freq_open (struct inode * ind, struct file * filp)
 	
 	data->gpio = gpio_freq_table[gpio] ;
 	data->f_mode = filp->f_mode ;
-//	spin_lock_init(& (data->spinlock));
+	spin_lock_init(& (data->spinlock));
 		
-	err = gpio_request(gpio_freq_table[gpio], THIS_MODULE->name);
+//	err = gpio_request(gpio_freq_table[gpio], THIS_MODULE->name);
+	err = gpio_request_one(gpio_freq_table[gpio], GPIOF_IN ,	 THIS_MODULE->name);
 	if (err != 0) {
 		printk(KERN_ERR "%s: unable to reserve GPIO %d\n", THIS_MODULE->name, gpio_freq_table[gpio]);
 		kfree(data);
@@ -211,7 +212,7 @@ static int gpio_freq_read(struct file * filp, char * buffer, size_t length, loff
 	int _error_count=0;
   int nb ;
   
-//	spin_lock_irqsave(& (data->spinlock), irqmsk);
+	spin_lock_irqsave(& (data->spinlock), irqmsk);
 	if ( data->pRead != data->pWrite ) 
 	{
 
@@ -234,7 +235,7 @@ static int gpio_freq_read(struct file * filp, char * buffer, size_t length, loff
    
 	}
 	
-//	spin_unlock_irqrestore(& (data->spinlock), irqmsk);
+	spin_unlock_irqrestore(& (data->spinlock), irqmsk);
 /*
   if (_count>0)
   	printk(  "read %d %d",  _count , length );
@@ -248,23 +249,6 @@ static int gpio_freq_read(struct file * filp, char * buffer, size_t length, loff
 
 }
 
-
-static unsigned await_timer = 0;
-static struct timeval initial;
-
-static inline unsigned micros(void)
-{
-    struct timeval t;
-    do_gettimeofday(&t);
-    t.tv_sec -= initial.tv_sec;
-    return ((unsigned) t.tv_sec * (unsigned) 1000000) + t.tv_usec;
-}
-
-static inline void await(unsigned us)
-{
-    await_timer += us;
-    while(micros() < await_timer) {}
-}
 
 void transmit_code( int gpio , int * duree , size_t count )
 {
@@ -311,8 +295,8 @@ static irqreturn_t gpio_freq_handler(int irq, void * arg)
 {
 	struct gpio_freq_data * data;
 	struct file * filp = (struct file *) arg;
-   	struct timespec current_time;
-    struct timespec delta;
+   	ktime_t current_time;
+    ktime_t delta;
    	unsigned long ns;
 	int pinData;
 	
@@ -323,14 +307,13 @@ static irqreturn_t gpio_freq_handler(int irq, void * arg)
 	if (data == NULL)
 		return IRQ_NONE;
 
-   	getnstimeofday(&current_time);
-	delta = timespec_sub(current_time, data->lastIrq_time);
-//	ns = ((long long)delta.tv_sec * 1000000)+(delta.tv_nsec/1000); 
-	ns = (delta.tv_nsec/1000); 
+   	current_time = ktime_get();
+	delta = ktime_sub_ns(current_time, data->lastIrq_time);
+	ns = ktime_to_us(delta);
 
 //  printk(KERN_INFO "pulse %ld\n", ns );
 
-//    spin_lock(&(data->spinlock));
+    spin_lock(&(data->spinlock));
 
 		pinData = gpio_get_value(data->gpio);
 		//calcul etat du pulse que l'on mesure
@@ -357,7 +340,7 @@ static irqreturn_t gpio_freq_handler(int irq, void * arg)
 	} else {
 		data->wasOverflow = 0;
 	}
-//    spin_unlock(&(data->spinlock));
+    spin_unlock(&(data->spinlock));
 
 	return IRQ_HANDLED;
 

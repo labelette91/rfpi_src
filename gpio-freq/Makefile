@@ -15,7 +15,9 @@ else
 all: modules
 
 modules:
-	${MAKE} -C ${KERNEL_DIR} SUBDIRS=${MODULE_DIR}  modules
+	${MAKE} -C ${KERNEL_DIR} M=${MODULE_DIR}  modules
+	./installPulseDriver.sh stop
+	./installPulseDriver.sh start
 
 clean:
 	rm -f *.o *.ko *.mod.c .*.o .*.ko .*.mod.c .*.cmd *~

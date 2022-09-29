@@ -26,7 +26,9 @@ int main(int argc, char *argv[])
     if (argc>=2)
     	dur  = atoi( argv[1]) ;
 
-    Device = DeviceR + "17" ;
+//    Device = DeviceR + "17" ; // GPIO 0
+    Device = DeviceR + "24" ; // GPIO 5
+	
     printf("opening %s  dur:%d\n",Device.c_str(),dur);
     
     fp = fopen(Device.c_str(), "r");
@@ -49,21 +51,21 @@ int main(int argc, char *argv[])
 
     	ioctl(fileno(fp), RD_VALUE, (int32_t*) &value);
 
-       	printf("ioctl %d \n",  value  );
+       	printf("\nioctl %d ",  value  );
 
        	int count = fread(pulse,4,2048,fp);
 
 	nbP += count ;
 			
        if ( count > 0 ) {
-         printf("\ncount %d :",count);
-         /*
+         printf("count %d : ",count);
+         
          for ( int k = 0 ; k < count ; k ++  ) 
          {
         		if ((k%32)==0)printf("\n");
-         		printf("%d ",pulse[k]/10 );
+         		printf("%d ",pulse[k] );
          	}
-         	*/
+         
        }
        usleep(10000l);
     }
